@@ -54,6 +54,9 @@ pub enum Event {
     MouseDown { pos: Point, button: MouseButton },
     MouseUp { pos: Point, button: MouseButton },
     MouseLeave,
+    /// Mouse wheel or trackpad scroll over `pos`. `delta` is in logical pixels;
+    /// positive `y` means scroll towards the top (content moves down).
+    Scroll { pos: Point, delta: Point },
     KeyDown { key: Key, mods: Modifiers, text: Option<String> },
     KeyUp { key: Key, mods: Modifiers },
 }

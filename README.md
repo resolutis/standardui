@@ -40,6 +40,8 @@ Run the full example (menus, text field, checkbox, bound label, buttons):
 cargo run --example hello
 ```
 
+`cargo run --example notes` shows a multi-line `TextArea` that wraps and scrolls.
+
 ## How it works
 
 | Piece | Approach |
@@ -71,7 +73,8 @@ back on the UI thread; `ui.handle()` gives a `Send` handle (`invokeLater`).
 
 ### Bindings
 
-`TextField::bind(|s| &mut s.name)`, `Checkbox::bind(|s| &mut s.flag)` are two-way.
+`TextField::bind(|s| &mut s.name)`, `TextArea::bind(|s| &mut s.notes)` and
+`Checkbox::bind(|s| &mut s.flag)` are two-way.
 `Label::bind(|s| format!(..))` recomputes each frame.
 
 ### Menus
@@ -107,7 +110,7 @@ STANDARDUI_SNAPSHOT=shots cargo run --example hello
 ## Not yet done (v0.1)
 
 - Clipboard (cut/copy/paste in `TextField`), text selection, caret blink
-- More widgets: ComboBox, Slider, List, TextArea, Tabs, ScrollView, Image
+- More widgets: ComboBox, Slider, List, Tabs, ScrollView, Image
 - Accessibility (AccessKit) and IME input
 - Multiple windows, context menus, file dialogs wrapper (`rfd` is available)
 - Native-control backend (real NSButton etc.) — API is designed so it can slot in

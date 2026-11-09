@@ -545,6 +545,18 @@ impl<S: 'static> ApplicationHandler<Message<S>> for Runner<S> {
                 let out = self.core.dispatch(&ev);
                 self.finish(out, el);
             }
+            WindowEvent::MouseWheel { delta, .. } => {
+                let delta = match delta {
+                    // One wheel notch scrolls about three lines.
+                    winit::event::MouseScrollDelta::LineDelta(x, y) => Point::new(x * 48.0, y * 48.0),
+                    winit::event::MouseScrollDelta::PixelDelta(p) => {
+                        let s = self.scale();
+                        Point::new(p.x as f32 / s, p.y as f32 / s)
+                    }
+                };
+                let out = self.core.dispatch(&Event::Scroll { pos: self.core.mouse, delta });
+                self.finish(out, el);
+            }
             WindowEvent::KeyboardInput { event, .. } => {
                 let key = map_key(&event.logical_key);
                 let mods = self.core.mods;

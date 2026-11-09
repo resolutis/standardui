@@ -4,6 +4,28 @@ All notable changes to standardui are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `TextArea`, a multi-line text input.
+  - Text wraps at the widget's width. When it's taller than the widget, it
+    scrolls with the mouse wheel or trackpad, and follows the caret as you
+    type or move. A thin indicator on the right shows the scroll position.
+  - Height is `.rows(n)` lines (default 4), or use `.flex(1.0)` in a `Column`
+    to fill the available height.
+  - Same API as `TextField` where it overlaps: `.bind(..)`, `.on_change(..)`,
+    `.placeholder(..)`, `.text(..)`, `.id(..)`, `.min_width(..)`, and
+    `ui.set_text` / `ui.set_enabled` by id.
+  - Keys: Enter inserts a new line. ↑/↓ move between lines and keep the
+    column. Home/End (⌘←/⌘→ on macOS) go to the start or end of the visual
+    line. Ctrl+Home/End (⌘↑/⌘↓ on macOS) go to the start or end of the text.
+  - No text selection or clipboard yet, the same as `TextField`.
+- `Event::Scroll { pos, delta }` for the mouse wheel and trackpad. `delta` is
+  in logical pixels; positive `y` scrolls towards the top. Code that matches
+  on `Event` exhaustively needs a new arm (or a `_` arm).
+- `notes` example showing a `TextArea` bound to the state.
+
 ## [0.1.1] - 2026-11-09
 
 This release fixes how `Row` and `Column` share out space. Before, a widget
@@ -144,5 +166,6 @@ state.
 - One window per app; no context menus; no wrapper for file dialogs yet (rfd
   is available directly).
 
+[Unreleased]: https://github.com/resolutis/standardui/compare/v0.1.1...HEAD
 [0.1.1]: https://github.com/resolutis/standardui/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/resolutis/standardui/releases/tag/v0.1.0

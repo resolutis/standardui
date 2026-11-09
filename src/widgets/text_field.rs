@@ -120,6 +120,38 @@ impl<S: 'static> TextField<S> {
     }
 }
 
+/// The background, border and focus indicator shared by text inputs
+/// (`TextField`, `TextArea`), drawn in the platform's style.
+pub(crate) fn paint_field_frame(p: &mut Painter, r: Rect, focused: bool) {
+    let t = p.theme;
+    let pal = &t.palette;
+    let radius = match t.platform {
+        Platform::MacOs => 5.0,
+        _ => t.corner_radius,
+    };
+
+    p.fill_round_rect(r, radius, pal.field_bg);
+    match t.platform {
+        Platform::MacOs => {
+            p.stroke_round_rect(r, radius, 1.0, pal.control_border);
+            if focused {
+                p.stroke_round_rect(r.inset(-2.5), radius + 2.5, 3.5, pal.focus_ring);
+            }
+        }
+        Platform::Windows => {
+            p.stroke_round_rect(r, radius, 1.0, pal.control_border);
+            let c = if focused { pal.accent } else { pal.text_secondary };
+            let w = if focused { 2.0 } else { 1.0 };
+            p.line(r.x + radius, r.bottom() - w / 2.0, r.right() - radius, r.bottom() - w / 2.0, w, c);
+        }
+        Platform::Linux => {
+            if focused {
+                p.stroke_round_rect(r, radius, 2.0, pal.accent);
+            }
+        }
+    }
+}
+
 impl<S: 'static> Default for TextField<S> {
     fn default() -> Self {
         Self::new()
@@ -163,31 +195,7 @@ impl<S: 'static> Widget<S> for TextField<S> {
         let pal = &t.palette;
         let r = self.rect;
         let focused = cx.focused == Some(self.uid);
-        let radius = match t.platform {
-            Platform::MacOs => 5.0,
-            _ => t.corner_radius,
-        };
-
-        p.fill_round_rect(r, radius, pal.field_bg);
-        match t.platform {
-            Platform::MacOs => {
-                p.stroke_round_rect(r, radius, 1.0, pal.control_border);
-                if focused {
-                    p.stroke_round_rect(r.inset(-2.5), radius + 2.5, 3.5, pal.focus_ring);
-                }
-            }
-            Platform::Windows => {
-                p.stroke_round_rect(r, radius, 1.0, pal.control_border);
-                let c = if focused { pal.accent } else { pal.text_secondary };
-                let w = if focused { 2.0 } else { 1.0 };
-                p.line(r.x + radius, r.bottom() - w / 2.0, r.right() - radius, r.bottom() - w / 2.0, w, c);
-            }
-            Platform::Linux => {
-                if focused {
-                    p.stroke_round_rect(r, radius, 2.0, pal.accent);
-                }
-            }
-        }
+        paint_field_frame(p, r, focused);
 
         let pad = Self::padding(t);
         let inner = Rect::new(r.x + pad, r.y, r.width - 2.0 * pad, r.height);
