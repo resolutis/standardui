@@ -88,8 +88,8 @@ impl<S: 'static> Widget<S> for Label<S> {
         let fs = self.font_size.unwrap_or(cx.theme.font_size);
         if self.wrap {
             let buffer = cx.text.layout(&self.text, fs, Some(avail.width));
-            let (_, h) = crate::text::measure_buffer(&buffer);
-            Size::new(avail.width, h)
+            let (w, h) = crate::text::measure_buffer(&buffer);
+            Size::new(w.min(avail.width), h)
         } else {
             let (w, h) = cx.text.measure(&self.text, fs);
             Size::new(w, h.max(cx.theme.control_height.min(22.0)))

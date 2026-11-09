@@ -29,8 +29,11 @@ pub struct Stack<S: 'static> {
     cross: CrossAlign,
     flex: f32,
     rect: Rect,
+    /// The `avail` size `sizes` was measured against.
+    measured_for: Option<Size>,
+    /// Last overflow amount reported, so the warning isn't repeated every frame.
+    overflow_reported: f32,
 }
-
 
 impl<S: 'static> Stack<S> {
     fn with_axis(axis: Axis) -> Self {
@@ -47,6 +50,8 @@ impl<S: 'static> Stack<S> {
             },
             flex: 0.0,
             rect: Rect::default(),
+            measured_for: None,
+            overflow_reported: 0.0,
         }
     }
 
@@ -96,6 +101,27 @@ impl<S: 'static> Stack<S> {
         self.spacing.unwrap_or(cx.theme.spacing)
     }
 
+    /// In debug builds, warn once (per distinct amount) when the fixed-size children
+    /// don't fit: anything past the edge would otherwise just silently not appear.
+    fn report_overflow(&mut self, overflow: f32, needed: f32, have: f32) {
+        if overflow <= 0.5 {
+            self.overflow_reported = 0.0;
+            return;
+        }
+        if (overflow - self.overflow_reported).abs() > 0.5 {
+            self.overflow_reported = overflow;
+            if cfg!(debug_assertions) {
+                eprintln!(
+                    "standardui: {} overflowed by {:.0}px (children need {:.0}px, have {:.0}px); \
+                     use .flex() on a child to let it take the remaining space instead",
+                    self.axis.name(),
+                    overflow,
+                    needed,
+                    have
+                );
+            }
+        }
+    }
 }
 
 impl Axis {
@@ -109,6 +135,19 @@ impl Axis {
         match self {
             Axis::Vertical => s.width,
             Axis::Horizontal => s.height,
+        }
+    }
+    /// `s` with its main-axis length replaced by `main`.
+    fn with_main(self, s: Size, main: f32) -> Size {
+        match self {
+            Axis::Vertical => Size::new(s.width, main),
+            Axis::Horizontal => Size::new(main, s.height),
+        }
+    }
+    fn name(self) -> &'static str {
+        match self {
+            Axis::Vertical => "Column",
+            Axis::Horizontal => "Row",
         }
     }
 }
@@ -131,21 +170,47 @@ impl<S: 'static> Widget<S> for Stack<S> {
             (avail.width - self.padding.horizontal()).max(0.0),
             (avail.height - self.padding.vertical()).max(0.0),
         );
-        self.sizes.clear();
-        let mut main_total = 0.0;
-        let mut cross_max: f32 = 0.0;
         let axis = self.axis;
-        for c in &mut self.children {
-            let s = c.measure(cx, inner);
-            main_total += axis.main(s);
-            cross_max = cross_max.max(axis.cross(s));
-            self.sizes.push(s);
+        let n = self.children.len();
+        self.sizes.clear();
+        self.sizes.resize(n, Size::ZERO);
+        let main_avail = axis.main(inner);
+
+        // Pass 1: fixed children, each offered only what earlier children left over.
+        let mut used = gap * n.saturating_sub(1) as f32;
+        let mut total_flex = 0.0;
+        for (i, c) in self.children.iter_mut().enumerate() {
+            let f = c.flex();
+            if f > 0.0 {
+                total_flex += f;
+                continue;
+            }
+            let remaining = (main_avail - used).max(0.0);
+            let s = c.measure(cx, axis.with_main(inner, remaining));
+            used += axis.main(s);
+            self.sizes[i] = s;
         }
-        if !self.children.is_empty() {
-            main_total += gap * (self.children.len() - 1) as f32;
+
+        // Pass 2: flex children share whatever is left, by weight.
+        let flex_space = (main_avail - used).max(0.0);
+        let mut main_total = used;
+        if total_flex > 0.0 {
+            for (i, c) in self.children.iter_mut().enumerate() {
+                let f = c.flex();
+                if f > 0.0 {
+                    let share = flex_space * f / total_flex;
+                    let s = c.measure(cx, axis.with_main(inner, share));
+                    main_total += axis.main(s);
+                    self.sizes[i] = s;
+                }
+            }
         }
-        let (w, h) = match self.axis {
-            Axis::Vertical => (if self.cross == CrossAlign::Stretch { inner.width } else { cross_max }, main_total),
+
+        // Report natural size; stretching to fill happens in `layout`.
+        let cross_max = self.sizes.iter().map(|s| axis.cross(*s)).fold(0.0, f32::max);
+        self.measured_for = Some(avail);
+        let (w, h) = match axis {
+            Axis::Vertical => (cross_max, main_total),
             Axis::Horizontal => (main_total, cross_max),
         };
         Size::new(w + self.padding.horizontal(), h + self.padding.vertical())
@@ -154,41 +219,46 @@ impl<S: 'static> Widget<S> for Stack<S> {
         self.rect = rect;
         let gap = self.gap(cx);
         let inner = self.padding.shrink(rect);
-        if self.sizes.len() != self.children.len() {
+        // Re-measure if the parent gave us a different size from the one we measured
+        // against (e.g. we were stretched or given a flex share).
+        if self.sizes.len() != self.children.len() || self.measured_for != Some(rect.size()) {
             self.measure(cx, rect.size());
         }
         let axis = self.axis;
         let main_avail = axis.main(inner.size());
-        let fixed: f32 = self.sizes.iter().map(|s| axis.main(*s)).sum::<f32>()
-            + gap * self.children.len().saturating_sub(1) as f32;
         let total_flex: f32 = self.children.iter().map(|c| c.flex()).sum();
-        let leftover = (main_avail - fixed).max(0.0);
+        let fixed: f32 = self
+            .children
+            .iter()
+            .zip(&self.sizes)
+            .filter(|(c, _)| c.flex() <= 0.0)
+            .map(|(_, s)| axis.main(*s))
+            .sum::<f32>()
+            + gap * self.children.len().saturating_sub(1) as f32;
+        let flex_space = (main_avail - fixed).max(0.0);
 
+        self.report_overflow(fixed - main_avail, fixed, main_avail);
+
+        let cross_avail = axis.cross(inner.size());
         let mut pos = 0.0;
         for (i, c) in self.children.iter_mut().enumerate() {
             let s = self.sizes[i];
-            let extra = if total_flex > 0.0 { leftover * c.flex() / total_flex } else { 0.0 };
-            let main_len = match self.axis {
-                Axis::Vertical => s.height,
-                Axis::Horizontal => s.width,
-            } + extra;
-            let cross_avail = match self.axis {
-                Axis::Vertical => inner.width,
-                Axis::Horizontal => inner.height,
+            let f = c.flex();
+            let main_len = if f > 0.0 && total_flex > 0.0 {
+                flex_space * f / total_flex
+            } else {
+                axis.main(s)
             };
             let cross_len = match self.cross {
                 CrossAlign::Stretch => cross_avail,
-                _ => match self.axis {
-                    Axis::Vertical => s.width.min(cross_avail),
-                    Axis::Horizontal => s.height.min(cross_avail),
-                },
+                _ => axis.cross(s).min(cross_avail),
             };
             let cross_off = match self.cross {
                 CrossAlign::Start | CrossAlign::Stretch => 0.0,
                 CrossAlign::Center => (cross_avail - cross_len) / 2.0,
                 CrossAlign::End => cross_avail - cross_len,
             };
-            let r = match self.axis {
+            let r = match axis {
                 Axis::Vertical => Rect::new(inner.x + cross_off, inner.y + pos, cross_len, main_len),
                 Axis::Horizontal => Rect::new(inner.x + pos, inner.y + cross_off, main_len, cross_len),
             };

@@ -9,6 +9,7 @@ struct State {
 
 fn main() {
     let app = build();
+
     app.run();
 }
 
@@ -36,19 +37,28 @@ fn build() -> App<State> {
     )
     .window(
         Window::new("Hello").size(420.0, 240.0).content(
-            Column::new()
+            Row::new()
                 .add(
-                    TextField::new()
-                        .id("name")
-                        .placeholder("Your name")
-                        .bind(|s: &mut State| &mut s.name),
+                    Column::new()
+                        .flex(1.0)
+                        .add(
+                            TextField::new()
+                                .id("name")
+                                .placeholder("Your name")
+                                .bind(|s: &mut State| &mut s.name),
+                        )
+                        .add(
+                            Button::new("Greet")
+                                .primary()
+                                .on_click(|s: &mut State, ui| {
+                                    ui.alert("Hi", format!("Hello, {}!", s.name))
+                                }),
+                        ),
                 )
                 .add(
-                    Button::new("Greet")
-                        .primary()
-                        .on_click(|s: &mut State, ui| {
-                            ui.alert("Hi", format!("Hello, {}!", s.name))
-                        }),
+                    Column::new().add(Button::new("Buuton").primary().on_click(
+                        |s: &mut State, ui| ui.alert("Hi", format!("Hello, {}!", s.name)),
+                    )),
                 ),
         ),
     )

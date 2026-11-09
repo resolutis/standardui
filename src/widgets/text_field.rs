@@ -19,6 +19,7 @@ pub struct TextField<S: 'static> {
     enabled: bool,
     hovered: bool,
     min_width: f32,
+    flex: f32,
     rect: Rect,
 }
 
@@ -36,6 +37,7 @@ impl<S: 'static> TextField<S> {
             enabled: true,
             hovered: false,
             min_width: 120.0,
+            flex: 0.0,
             rect: Rect::default(),
         }
     }
@@ -58,6 +60,12 @@ impl<S: 'static> TextField<S> {
 
     pub fn min_width(mut self, w: f32) -> Self {
         self.min_width = w;
+        self
+    }
+
+    /// Take a share of leftover space in a `Row`/`Column` (e.g. `.flex(1.0)` to fill a row).
+    pub fn flex(mut self, flex: f32) -> Self {
+        self.flex = flex;
         self
     }
 
@@ -137,8 +145,12 @@ impl<S: 'static> Widget<S> for TextField<S> {
             }
         }
     }
-    fn measure(&mut self, cx: &mut LayoutCx, avail: Size) -> Size {
-        Size::new(avail.width.max(self.min_width), cx.theme.control_height)
+    fn measure(&mut self, cx: &mut LayoutCx, _avail: Size) -> Size {
+        // Natural size only; a stretching Column or `.flex()` makes it wider.
+        Size::new(self.min_width, cx.theme.control_height)
+    }
+    fn flex(&self) -> f32 {
+        self.flex
     }
     fn layout(&mut self, _cx: &mut LayoutCx, rect: Rect) {
         self.rect = rect;
