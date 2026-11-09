@@ -1,0 +1,37 @@
+[package]
+name = "standardui"
+version = "0.1.0"
+edition = "2021"
+description = "Easy, native-looking desktop UIs in Rust — callbacks, menus, icons, done for you."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/resolutis/standardui"
+homepage = "https://github.com/resolutis/standardui"
+documentation = "https://docs.rs/standardui"
+readme = "README.md"
+keywords = ["gui", "ui", "desktop", "native", "widgets"]
+categories = ["gui"]
+exclude = [".DS_Store", "**/.DS_Store", ".claude/", "tools/", "target/"]
+
+[dependencies]
+winit = "0.30"
+softbuffer = "0.4"
+tiny-skia = "0.11"
+cosmic-text = "0.12"
+image = { version = "0.25", default-features = false, features = ["png"] }
+raw-window-handle = "0.6"
+
+# Native menu bar on macOS (the global menu bar must be the real one).
+[target.'cfg(target_os = "macos")'.dependencies]
+muda = "0.15"
+rfd = "0.15"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+rfd = "0.15"
+
+# On Linux use the XDG desktop portal for dialogs so we don't need GTK dev headers to build.
+[target.'cfg(target_os = "linux")'.dependencies]
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
+tokio = { version = "1", features = ["rt"] }
+
+[[example]]
+name = "hello"
