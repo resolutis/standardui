@@ -1,3 +1,6 @@
 target/
 shots/
 .DS_Store
+.vscode/launch.json
+ARCHITECTURE.md
+TEXT_SELECTION.md
