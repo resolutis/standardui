@@ -6,6 +6,8 @@ All notable changes to standardui are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-09
+
 ### Added
 
 - `TextArea`, a multi-line text input.
@@ -166,6 +168,7 @@ state.
 - One window per app; no context menus; no wrapper for file dialogs yet (rfd
   is available directly).
 
-[Unreleased]: https://github.com/resolutis/standardui/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/resolutis/standardui/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/resolutis/standardui/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/resolutis/standardui/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/resolutis/standardui/releases/tag/v0.1.0
