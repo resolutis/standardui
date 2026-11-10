@@ -440,7 +440,7 @@ impl<S: 'static> Widget<S> for TextArea<S> {
                 self.caret = self.caret.min(self.char_len());
             }
             WidgetCmdKind::SetEnabled(e) => self.enabled = *e,
-            WidgetCmdKind::SetChecked(_) => {}
+            _ => {}
         }
         true
     }
@@ -468,7 +468,7 @@ mod tests {
             let mut area = TextArea::new().rows(rows).bind(|s: &mut String| s);
             let mut state = initial.to_string();
             area.sync(&mut state);
-            let mut lcx = LayoutCx { text: &mut text, theme: &theme };
+            let mut lcx = LayoutCx { text: &mut text, theme: &theme, window: Rect::new(0.0, 0.0, width, 1000.0) };
             let size = area.measure(&mut lcx, Size::new(width, 1000.0));
             area.layout(&mut lcx, Rect::new(0.0, 0.0, width, size.height));
             let mut ui = Ui::new(None);

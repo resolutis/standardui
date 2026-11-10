@@ -45,6 +45,10 @@ pub enum WidgetCmdKind {
     SetText(String),
     SetEnabled(bool),
     SetChecked(bool),
+    /// Select an item of a `ComboBox` by index, or clear the selection.
+    SetSelected(Option<usize>),
+    /// Replace the items of a `ComboBox`.
+    SetItems(Vec<String>),
 }
 
 pub struct Ui<S: 'static> {
@@ -84,6 +88,19 @@ impl<S: 'static> Ui<S> {
 
     pub fn set_checked(&mut self, id: &str, checked: bool) {
         self.widget(id, WidgetCmdKind::SetChecked(checked));
+    }
+
+    /// Select item `index` of the `ComboBox` with this `id`, or pass `None` to
+    /// clear the selection. `on_select` is not called. If the combo box is bound
+    /// to the state, change the state instead.
+    pub fn set_selected(&mut self, id: &str, index: impl Into<Option<usize>>) {
+        self.widget(id, WidgetCmdKind::SetSelected(index.into()));
+    }
+
+    /// Replace the items of the `ComboBox` with this `id`. The selection is kept
+    /// if that index still exists, and cleared otherwise.
+    pub fn set_items<T: Into<String>>(&mut self, id: &str, items: impl IntoIterator<Item = T>) {
+        self.widget(id, WidgetCmdKind::SetItems(items.into_iter().map(Into::into).collect()));
     }
 
     /// Move keyboard focus to the widget with this `id`.

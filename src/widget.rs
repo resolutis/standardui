@@ -30,6 +30,9 @@ pub type ValueCallback<S, V> = Box<dyn FnMut(V, &mut S, &mut Ui<S>)>;
 pub struct LayoutCx<'a> {
     pub text: &'a mut TextSystem,
     pub theme: &'a Theme,
+    /// The part of the window a popup (e.g. a `ComboBox` list) may cover:
+    /// everything below the in-window menu bar.
+    pub window: Rect,
 }
 
 pub struct PaintCx {
@@ -85,6 +88,19 @@ pub trait Widget<S: 'static> {
 
     /// Returns true if the event was consumed.
     fn event(&mut self, ev: &Event, cx: &mut EventCx<S>) -> bool;
+
+    /// Paint anything that floats above the rest of the window, such as an open
+    /// drop-down list. Called after the whole tree has been painted, without the
+    /// content clip. Containers should forward to children.
+    fn paint_overlay(&mut self, _p: &mut Painter, _cx: &PaintCx) {}
+
+    /// Offered every event before `event` is, so a widget with an open popup can
+    /// take input wherever the pointer is. Return true to consume the event;
+    /// widgets with nothing open return false. Containers should forward to
+    /// children and stop at the first taker.
+    fn popup_event(&mut self, _ev: &Event, _cx: &mut EventCx<S>) -> bool {
+        false
+    }
 
     /// Apply a queued command if `cmd.target` is this widget's id. Containers
     /// should forward to children. Returns true when handled.

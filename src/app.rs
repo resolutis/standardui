@@ -213,9 +213,11 @@ impl<S: 'static> Core<S> {
             }
         }
         let rect = self.content_rect(width, height);
+        let top = self.menubar_height();
         if let Some(root) = &mut self.root {
             root.sync(&mut self.state);
-            let mut cx = LayoutCx { text: &mut self.text, theme: &self.theme };
+            let window = Rect::new(0.0, top, width, (height - top).max(0.0));
+            let mut cx = LayoutCx { text: &mut self.text, theme: &self.theme, window };
             let _ = root.measure(&mut cx, rect.size());
             root.layout(&mut cx, rect);
         }
@@ -233,6 +235,8 @@ impl<S: 'static> Core<S> {
         p.clear(self.theme.palette.window_bg);
         if let Some(root) = &mut self.root {
             p.clipped(rect, |p| root.paint(p, &PaintCx { focused }));
+            // Popups (an open ComboBox list) float above the content, unclipped.
+            root.paint_overlay(&mut p, &PaintCx { focused });
         }
         if let Some(bar) = &self.menubar {
             if self.theme.platform != Platform::MacOs {
@@ -245,7 +249,23 @@ impl<S: 'static> Core<S> {
     fn dispatch(&mut self, ev: &Event) -> DispatchOut {
         let mut out = DispatchOut { redraw: false, cmds: Vec::new(), menu_activate: None };
 
-        // In-window menu bar gets first look.
+        // A widget with an open popup (a ComboBox list) gets first look, so it can
+        // take input anywhere in the window and close when you click away.
+        if let Some(root) = &mut self.root {
+            let mut cx = EventCx { state: &mut self.state, ui: &mut self.ui, theme: &self.theme, text: &mut self.text, redraw: false };
+            let consumed = root.popup_event(ev, &mut cx);
+            out.redraw |= cx.redraw;
+            out.cmds.append(&mut self.ui.cmds);
+            if consumed {
+                // The popup has the mouse; let the widgets under it drop hover.
+                if matches!(ev, Event::MouseMove(_)) {
+                    self.forward(&Event::MouseLeave, &mut out);
+                }
+                return out;
+            }
+        }
+
+        // In-window menu bar gets next look.
         if self.uses_drawn_menu() {
             let bar = self.menubar.as_ref().unwrap();
             let r = self.drawn_menu.event(ev, bar, &mut self.text, &self.theme);

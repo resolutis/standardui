@@ -190,6 +190,7 @@ impl<S: 'static> Widget<S> for Checkbox<S> {
             WidgetCmdKind::SetText(t) => self.label = t.clone(),
             WidgetCmdKind::SetEnabled(e) => self.enabled = *e,
             WidgetCmdKind::SetChecked(c) => self.checked = *c,
+            _ => {}
         }
         true
     }

@@ -189,7 +189,7 @@ impl<S: 'static> Widget<S> for Button<S> {
         match &cmd.kind {
             WidgetCmdKind::SetText(t) => self.label = t.clone(),
             WidgetCmdKind::SetEnabled(e) => self.enabled = *e,
-            WidgetCmdKind::SetChecked(_) => {}
+            _ => {}
         }
         true
     }

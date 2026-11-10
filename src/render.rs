@@ -108,6 +108,26 @@ impl<'a> Painter<'a> {
         self.pixmap.stroke_path(&path, &Self::paint_for(color), &stroke, self.transform(), mask.as_ref());
     }
 
+    /// Connected line segments through `points`, with round caps and joins
+    /// (used for chevrons).
+    pub fn polyline(&mut self, points: &[(f32, f32)], width: f32, color: Color) {
+        let Some((first, rest)) = points.split_first() else { return };
+        let mut pb = PathBuilder::new();
+        pb.move_to(first.0, first.1);
+        for (x, y) in rest {
+            pb.line_to(*x, *y);
+        }
+        let Some(path) = pb.finish() else { return };
+        let stroke = Stroke {
+            width,
+            line_cap: tiny_skia::LineCap::Round,
+            line_join: tiny_skia::LineJoin::Round,
+            ..Stroke::default()
+        };
+        let mask = self.skia_mask();
+        self.pixmap.stroke_path(&path, &Self::paint_for(color), &stroke, self.transform(), mask.as_ref());
+    }
+
     /// A simple check mark inside `rect`.
     pub fn check_mark(&mut self, rect: Rect, width: f32, color: Color) {
         let mut pb = PathBuilder::new();

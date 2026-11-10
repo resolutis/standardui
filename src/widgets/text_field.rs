@@ -313,7 +313,7 @@ impl<S: 'static> Widget<S> for TextField<S> {
                 self.caret = self.caret.min(self.char_len());
             }
             WidgetCmdKind::SetEnabled(e) => self.enabled = *e,
-            WidgetCmdKind::SetChecked(_) => {}
+            _ => {}
         }
         true
     }

@@ -6,6 +6,42 @@ All notable changes to standardui are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `ComboBox`, a drop-down list. It shows the selected item, and opens a list
+  of all the items to pick one from.
+  - `ComboBox::new(["Small", "Medium", "Large"])` takes the items.
+    `.bind(|s| &mut s.index)` binds the selected index (a `usize`) two ways,
+    and `.on_select(|index, state, ui| ..)` runs when the user picks a
+    different item. Also `.selected(i)`, `.placeholder(..)`, `.enabled(..)`,
+    `.id(..)`, `.min_width(..)` and `.flex(..)`.
+  - The list opens below the field. If there isn't room, it opens above, and
+    if it still doesn't fit it scrolls (mouse wheel, or the arrow keys).
+  - Mouse: click the field, then click an item; or press, drag to an item and
+    release. Clicking anywhere else closes the list.
+  - Keys: Space, Enter, ↑ or ↓ open the list. ↑/↓/Home/End move, Enter or
+    Space picks, Escape closes. Typing a letter jumps to the next item that
+    starts with it, whether the list is open or not.
+  - The field is as wide as its longest item, so it doesn't change size when
+    the selection changes.
+  - It is not editable: you can't type a value that isn't in the list.
+- `ui.set_selected(id, index)` selects a `ComboBox` item by index (`None`
+  clears the selection), and `ui.set_items(id, items)` replaces its items.
+- `Widget::paint_overlay` and `Widget::popup_event`, so a widget can draw a
+  popup above the rest of the window and take input while it's open. Both have
+  default implementations, so existing widgets don't need to change. A custom
+  container should forward both to its children, or a `ComboBox` inside it
+  won't show its list.
+- `Painter::polyline` draws connected line segments (used for the arrows).
+- `settings` example showing two `ComboBox`es bound to the state.
+
+### Changed
+
+- `LayoutCx` has a new `window` field: the part of the window a popup may
+  cover. Code that builds a `LayoutCx` itself needs to set it.
+- `WidgetCmdKind` has two new variants, `SetSelected` and `SetItems`. Code
+  that matches on it exhaustively needs new arms (or a `_` arm).
+
 ## [0.1.2] - 2026-11-09
 
 ### Added

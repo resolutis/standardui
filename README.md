@@ -41,6 +41,7 @@ cargo run --example hello
 ```
 
 `cargo run --example notes` shows a multi-line `TextArea` that wraps and scrolls.
+`cargo run --example settings` shows `ComboBox` drop-down lists.
 
 ## How it works
 
@@ -67,14 +68,15 @@ Button::new("Clear").on_click(|state: &mut State, ui| {
 ```
 
 `Ui` queues commands (`alert`, `quit`, `set_text`, `set_enabled`, `set_checked`,
-`focus`, `set_title`) and applies them after the callback returns, so callbacks
+`set_selected`, `set_items`, `focus`, `set_title`) and applies them after the callback returns, so callbacks
 are re-entrancy-safe. `ui.spawn(work, then)` runs `work` on a thread and `then`
 back on the UI thread; `ui.handle()` gives a `Send` handle (`invokeLater`).
 
 ### Bindings
 
-`TextField::bind(|s| &mut s.name)`, `TextArea::bind(|s| &mut s.notes)` and
-`Checkbox::bind(|s| &mut s.flag)` are two-way.
+`TextField::bind(|s| &mut s.name)`, `TextArea::bind(|s| &mut s.notes)`,
+`Checkbox::bind(|s| &mut s.flag)` and `ComboBox::bind(|s| &mut s.index)` are
+two-way.
 `Label::bind(|s| format!(..))` recomputes each frame.
 
 ### Menus
@@ -110,7 +112,7 @@ STANDARDUI_SNAPSHOT=shots cargo run --example hello
 ## Not yet done (v0.1)
 
 - Clipboard (cut/copy/paste in `TextField`), text selection, caret blink
-- More widgets: ComboBox, Slider, List, Tabs, ScrollView, Image
+- More widgets: editable ComboBox, Slider, List, Tabs, ScrollView, Image
 - Accessibility (AccessKit) and IME input
 - Multiple windows, context menus, file dialogs wrapper (`rfd` is available)
 - Native-control backend (real NSButton etc.) — API is designed so it can slot in

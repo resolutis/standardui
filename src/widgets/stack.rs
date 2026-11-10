@@ -288,6 +288,14 @@ impl<S: 'static> Widget<S> for Stack<S> {
         }
         handled
     }
+    fn paint_overlay(&mut self, p: &mut Painter, cx: &PaintCx) {
+        for c in &mut self.children {
+            c.paint_overlay(p, cx);
+        }
+    }
+    fn popup_event(&mut self, ev: &Event, cx: &mut EventCx<S>) -> bool {
+        self.children.iter_mut().any(|c| c.popup_event(ev, cx))
+    }
     fn apply(&mut self, cmd: &WidgetCmd) -> bool {
         self.children.iter_mut().any(|c| c.apply(cmd))
     }
@@ -396,6 +404,8 @@ macro_rules! stack_wrapper {
             fn rect(&self) -> Rect { self.0.rect() }
             fn paint(&mut self, p: &mut Painter, cx: &PaintCx) { self.0.paint(p, cx) }
             fn event(&mut self, ev: &Event, cx: &mut EventCx<S>) -> bool { self.0.event(ev, cx) }
+            fn paint_overlay(&mut self, p: &mut Painter, cx: &PaintCx) { self.0.paint_overlay(p, cx) }
+            fn popup_event(&mut self, ev: &Event, cx: &mut EventCx<S>) -> bool { self.0.popup_event(ev, cx) }
             fn apply(&mut self, cmd: &WidgetCmd) -> bool { self.0.apply(cmd) }
             fn collect_focusable(&self, out: &mut Vec<Uid>) { self.0.collect_focusable(out) }
             fn find_uid(&self, id: &str) -> Option<Uid> { self.0.find_uid(id) }
